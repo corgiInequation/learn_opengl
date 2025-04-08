@@ -12,7 +12,7 @@ Texture::Texture() {
 
 void Texture:: bindTextureUnit(int i)
 {
-	//Ïàµ±ÓÚ°ÑidµÄĞÅÏ¢´æÈëGL_TEXTURE0
+	//ï¿½àµ±ï¿½Ú°ï¿½idï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½GL_TEXTURE0
 	glActiveTexture(GL_TEXTURE0 + i);
 	glBindTexture(GL_TEXTURE_2D, id);
 }
@@ -26,7 +26,7 @@ void Texture:: setParai(GLenum target, GLenum pname, GLint param)
 void Texture:: loadData(const char* path)
 {
 	stbi_set_flip_vertically_on_load(true);
-	//¼ÓÔØÎÆÀí
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	int width, height, nrChannels;
 	unsigned char *data = stbi_load(path, &width, &height, &nrChannels, 0);
 	if (data)

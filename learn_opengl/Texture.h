@@ -1,6 +1,6 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
-#include <glad/glad.h>; // 包含glad来获取所有的必须OpenGL头文件
+#include <glad/glad.h>; // 锟斤拷锟斤拷glad锟斤拷锟斤拷取锟斤拷锟叫的憋拷锟斤拷OpenGL头锟侥硷拷
 
 #include <string>
 #include <fstream>
