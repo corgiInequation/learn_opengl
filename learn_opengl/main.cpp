@@ -12,6 +12,7 @@
 int nows[] = { 3, 10, 17 };
 bool flag[] = { true, true, true };
 float odds = 0.2;
+int change = 1;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
