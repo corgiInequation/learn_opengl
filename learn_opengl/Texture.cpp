@@ -5,6 +5,11 @@
 #include <glad/glad.h>
 #include "stb_image.h"
 #include"Texture.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
 
 Texture::Texture() {
     glGenTextures(1, &id);

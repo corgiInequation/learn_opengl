@@ -1,7 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <glad/glad.h>; // 包含glad来获取所有的必须OpenGL头文件
+#include <glad/glad.h>; // 锟斤拷锟斤拷glad锟斤拷锟斤拷取锟斤拷锟叫的憋拷锟斤拷OpenGL头锟侥硷拷
 
 #include <string>
 #include <fstream>
@@ -16,8 +16,8 @@ public:
 	Shader(const char* vertexPath, const char* fragPath);
 
 	void use();
-	// uniform工具函数
-	//&有两种功能，一种是引用，一种是去地址。在这里是引用的意思，可以避免拷贝，省下空间
+	// uniform锟斤拷锟竭猴拷锟斤拷
+	//&锟斤拷锟斤拷锟街癸拷锟杰ｏ拷一锟斤拷锟斤拷锟斤拷锟矫ｏ拷一锟斤拷锟斤拷去锟斤拷址锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟斤拷锟矫碉拷锟斤拷思锟斤拷锟斤拷锟皆憋拷锟解拷锟斤拷锟斤拷省锟铰空硷拷
 	void setBool(const std::string& name, bool value) const;
 	void setInt(const std::string& name, int value) const;
 	void setFloat(const std::string& name, float value) const;
