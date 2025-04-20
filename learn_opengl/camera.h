@@ -16,7 +16,9 @@ enum Camera_Movement {
 	FORWARD,
 	BACKWARD,
 	LEFT,
-	RIGHT
+	RIGHT,
+	UP,
+	DOWN
 };
 
 class Camera {
@@ -33,6 +35,7 @@ public:
 	void processMouseMovement(float xoffet, float yoffet);
 	void processMouseScroll(float yoffet);
 	void processKeyBoard(Camera_Movement movement, float deltaTime);
+	glm::vec3 getCameraPos();
 private:
 	//把相机的一些向量改变
 	void updateCameraVectors();

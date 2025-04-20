@@ -154,7 +154,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="f_shader.glsl" />
+    <None Include="f_shader_gouraud.glsl" />
+    <None Include="light_f_shader.glsl" />
     <None Include="v_shader.glsl" />
+    <None Include="v_shader_gouraud.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="awesomeface.png" />

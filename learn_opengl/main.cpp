@@ -10,18 +10,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-float odds = 0.2;
-
 glm::vec3 pos(0.0f, 0.0f, 5.0f);
 glm::vec3 gaze(0.0f, 0.0f, -1.0f);
 glm::vec3 t(0.0f, 1.0f, 0.0f);
 Camera camera(gaze, t, pos, 45.0f, 0.0f, -90.0f, 0.05f, 1.0f);
-float lastX = 0;
-float lastY = 0;
-float lastTime = 0;
-bool firstMouse = true;
 
+float lastTime = 0, currentTime = 0, deltaTime = 0;
+float lastx = 0, lasty = 0;
+bool is_first = true;
 
+glm::vec3 lightPos(1.0f, 1.2f, 2.0f);
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -29,55 +27,16 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
-{
-	float xpos = static_cast<float>(xposIn);
-	float ypos = static_cast<float>(yposIn);
-
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = false;
-	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-	lastX = xpos;
-	lastY = ypos;
-
-	camera.processMouseMovement(xoffset, yoffset);
-}
-
 //之所以有的时候又double，是因为callback函数要求的为double
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-	camera.processMouseScroll(static_cast<float>(yoffset));
-}
 
-void processInput(GLFWwindow* window, Shader& programShader)
+void processInput(GLFWwindow* window, Camera & camera)
 {
-	float currentTime = (float)glfwGetTime();
-	float deltaTime =  currentTime - lastTime;
+	currentTime = glfwGetTime();
+	deltaTime = currentTime - lastTime;
 	lastTime = currentTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
-	}
-	else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-	{
-		odds -= 0.001;
-		odds = std::clamp(odds, 0.0f, 1.0f);
-		printf("%f\n", odds);
-		programShader.setFloat("odds", odds);
-	}
-	else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-	{
-		odds += 0.001;
-		printf("%f\n", odds);
-		odds = std::clamp(odds, 0.0f, 1.0f);
-		programShader.setFloat("odds", odds);
 	}
 	else if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
@@ -87,16 +46,44 @@ void processInput(GLFWwindow* window, Shader& programShader)
 	{
 		camera.processKeyBoard(BACKWARD, deltaTime);
 	}
-	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		camera.processKeyBoard(RIGHT, deltaTime);
-	}
 	else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 	{
 		camera.processKeyBoard(LEFT, deltaTime);
 	}
+	else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		camera.processKeyBoard(RIGHT, deltaTime);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		camera.processKeyBoard(UP, deltaTime);
+	}
+	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		camera.processKeyBoard(DOWN, deltaTime);
+	}
+
 }
 
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+	if (is_first)
+	{
+		lastx = (float)xposIn;
+		lasty = (float)yposIn;
+		is_first = false;
+	}
+	float xoffet = xposIn - lastx;
+	float yoffet = lasty - yposIn;
+	camera.processMouseMovement(xoffet, yoffet);
+	lastx = xposIn;
+	lasty = yposIn;
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	camera.processMouseScroll(static_cast<float>(yoffset));
+}
 
 int main()
 {
@@ -120,190 +107,142 @@ int main()
 		return -1;
 	}
 
+	glEnable(GL_DEPTH_TEST);
 	glViewport(0, 0, 800, 600);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	const char* vertexPath = "D:\\learning_codes\\CG\\learn_opengl\\learn_opengl\\v_shader.glsl";
 	const char* fragPath = "D:\\learning_codes\\CG\\learn_opengl\\learn_opengl\\f_shader.glsl";
+	Shader phongShader(vertexPath, fragPath);
 
-	Shader shaderProgram(vertexPath, fragPath);
+	vertexPath = "D:\\learning_codes\\CG\\learn_opengl\\learn_opengl\\v_shader.glsl";
+	fragPath = "D:\\learning_codes\\CG\\learn_opengl\\learn_opengl\\light_f_shader.glsl";
+	Shader lightShader(vertexPath, fragPath);
 
-	Texture texture1;
+	vertexPath = "D:\\learning_codes\\CG\\learn_opengl\\learn_opengl\\v_shader_gouraud.glsl";
+	fragPath = "D:\\learning_codes\\CG\\learn_opengl\\learn_opengl\\f_shader_gouraud.glsl";
+	Shader gouraudShader(vertexPath, fragPath);
 
-	texture1.setParai(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	texture1.setParai(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	texture1.setParai(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	texture1.setParai(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	unsigned int VAO;
+	glGenVertexArrays(1, &VAO);
+	unsigned int lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
 
-	texture1.loadData(".\\container.jpg");
-
-	Texture texture2;
-
-	texture2.setParai(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	texture2.setParai(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	texture2.setParai(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	texture2.setParai(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	texture2.loadData(".\\awesomeface.png");
-
-	shaderProgram.use();
-	shaderProgram.setInt("ourTexture1", 0);
-	shaderProgram.setInt("ourTexture2", 1);
-	shaderProgram.setFloat("odds", 0.2);
-
-
-	//��ʼ��VAOs��VBOs
-	unsigned int VAOs[2];
-	glGenVertexArrays(2, VAOs);
-	unsigned int VBOs[2];
-	glGenBuffers(2, VBOs);
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
-
-	float vertices_1[] = {
-		//     ---- 位置 ----       ---- 颜色 ----     - texcoord -
-			 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // ����
-			 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // ����
-			-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // ����
-			-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // ����
-	};
 	float vertices[] = {
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-	};
-	glm::vec3 cubePositions[] = {
-	  glm::vec3(0.0f,  0.0f,  0.0f),
-	  glm::vec3(2.0f,  5.0f, -15.0f),
-	  glm::vec3(-1.5f, -2.2f, -2.5f),
-	  glm::vec3(-3.8f, -2.0f, -12.3f),
-	  glm::vec3(2.4f, -0.4f, -3.5f),
-	  glm::vec3(-1.7f,  3.0f, -7.5f),
-	  glm::vec3(1.3f, -2.0f, -2.5f),
-	  glm::vec3(1.5f,  2.0f, -2.5f),
-	  glm::vec3(1.5f,  0.2f, -1.5f),
-	  glm::vec3(-1.3f,  1.0f, -1.5f)
-	};
-	unsigned int indices[] = {
-
-		0, 1, 3, // ��һ��������
-		1, 2, 3  // �ڶ���������
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
-	//GL_ARRAY_BUFFER���ǲ��vbos[0]����u�̡�
-
-	glBindVertexArray(VAOs[0]);
-	/*glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);*/
-	//ָ����θ�v_shader�е�locationΪ0��1�Ķ��㴫������
-	glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	/*glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);*/
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 
-	texture1.bindTextureUnit(0);
-	texture2.bindTextureUnit(1);
+	glBindVertexArray(lightVAO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	
+	float r = 4.0f;
 
-	//鼠标设置
-	glEnable(GL_DEPTH_TEST);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(window,mouse_callback);
-
-	//滚轮设置
-	glfwSetScrollCallback(window, scroll_callback);
-
-
-	//��Ⱦ����ѭ��
 	while (!glfwWindowShouldClose(window))
 	{
-		processInput(window, shaderProgram);
+		processInput(window, camera);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-		glm::mat4 view = glm::mat4(1.0f);
-		view = camera.getViewMatrix();
-		shaderProgram.setMat4("view", view);
+		lightPos = glm::vec3(r * cos(glfwGetTime()), 1.2f, r * sin(glfwGetTime()));
+		//想要光源旋转，就把这个注释了
+		lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
 
-		glm::mat4 projection = glm::mat4(1.0f);
-		projection = glm::perspective(glm::radians(camera.fov), 800.0f / 600.0f, 0.1f, 100.0f);
-		shaderProgram.setMat4("projection", projection);
 
-		//clear���������
-		//clear color���Ǹ���Ļ��ɫ
-		for (int i = 0; i < 10; i++)
-		{
-
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			if (i % 3 == 0)
-			{
-				float angle = (float)glfwGetTime()*10;
-				model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-				shaderProgram.setMat4("model", model);
-			}
-			else
-			{
-				float angle = 20.0f;
-				model = glm::rotate(model, glm::radians(angle * i), glm::vec3(1.0f, 0.3f, 0.5f));
-				shaderProgram.setMat4("model", model);
-			}
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		gouraudShader.use();
+		gouraudShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		gouraudShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		gouraudShader.setVec3("lightPos", lightPos);
 
 		
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glm::mat4 view = glm::mat4(1.0f);
+		view = camera.getViewMatrix();
+		gouraudShader.setMat4("view", view);
+		glm::mat4 projection = glm::mat4(1.0f);
+		projection = glm::perspective(glm::radians(camera.fov), 800.0f / 600.0f, 0.1f, 100.0f);
+		gouraudShader.setMat4("projection", projection);
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(-1.0f,-1.0f, 0.0f));
+		gouraudShader.setMat4("model", model);
+		
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		lightShader.use();
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f));
+		lightShader.setMat4("view", view);
+		lightShader.setMat4("projection", projection);
+		lightShader.setMat4("model", model);
+		
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
-	glDeleteVertexArrays(1, VAOs);
-	glDeleteBuffers(1, VBOs);
-	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &lightVAO);
 	glfwTerminate();
 
 	return 0;
